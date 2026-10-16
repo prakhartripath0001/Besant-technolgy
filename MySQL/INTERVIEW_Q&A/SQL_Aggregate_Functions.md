@@ -1,131 +1,197 @@
-# SQL Triggers — Hinglish Mein Samjho
+# SQL Aggregate Functions — Hinglish Explanation
 
-SQL mein Trigger ek aisa database object hai jo automatically execute hota hai jab koi specific event hota hai, jaise `INSERT`, `UPDATE` ya `DELETE`.
+SQL mein Aggregate Functions multiple rows ke data ko calculate karke ek single result deti hain.
 
-Simple example: Jaise hi company mein koi naya employee add ho, database automatically uski entry ek audit table mein bhi save kar de. Iske liye trigger use kar sakte hain.
+Simple example: Agar 5 students ke marks diye hain, toh unke total marks, average marks, highest marks ya lowest marks nikalna aggregate functions ka kaam hai.
 
-## 1. Trigger kaise kaam karta hai?
+## 1. Sample table: Students
 
-Step 1: Event hota hai
+| id | name  | city   | marks |
+| -- | ----- | ------ | ----- |
+| 1  | Rahul | Delhi  | 85    |
+| 2  | Priya | Mumbai | 92    |
+| 3  | Aman  | Delhi  | 70    |
+| 4  | Neha  | Pune   | 88    |
+| 5  | Karan | Mumbai | 60    |
 
-INSERT / UPDATE / DELETE
+SQL mein 5 important aggregate functions hain:
 
-Step 2: Trigger execute hota hai
-
-Database automatically action leta hai
-
-Step 3: Action perform hota hai
-
-Jaise audit log mein record save karna
-
-## 2. Trigger ke types
-
-| Type            | Meaning                          |
-| --------------- | -------------------------------- |
-| `BEFORE INSERT` | Naya record insert hone se pehle |
-| `AFTER INSERT`  | Naya record insert hone ke baad  |
-| `BEFORE UPDATE` | Record update hone se pehle      |
-| `AFTER UPDATE`  | Record update hone ke baad       |
-| `BEFORE DELETE` | Record delete hone se pehle      |
-| `AFTER DELETE`  | Record delete hone ke baad       |
-
-Ye common MySQL trigger types hain.
-
-## 3. Practical example in MySQL
-
-Maan lo humare paas `Employees` table hai.
+1\. COUNT() — Kitne records hain?
 
 ```
-CREATE TABLE Employees (
-    id INT PRIMARY KEY,
-    name VARCHAR(50),
-    department VARCHAR(30)
-);
+SELECT COUNT(*) FROM Students;
 ```
 
-Ab ek audit table banate hain jisme employee insert hone ka record save hoga.
+Output: `5`
+
+Meaning: Table mein total 5 rows hain.
+
+2\. SUM() — Total kitna hai?
 
 ```
-CREATE TABLE Employee_Audit (
-    employee_id INT,
-    action_type VARCHAR(20),
-    action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+SELECT SUM(marks) FROM Students;
 ```
 
-### Ab trigger create karo
+Output: `395`
+
+Meaning: Sabhi students ke marks ka total 395 hai.
+
+3\. AVG() — Average kitna hai?
 
 ```
-CREATE TRIGGER after_employee_insert
-AFTER INSERT ON Employees
-FOR EACH ROW
-INSERT INTO Employee_Audit (employee_id, action_type)
-VALUES (NEW.id, 'INSERT');
+SELECT AVG(marks) FROM Students;
 ```
 
-### Trigger ko test karo
+Output: `79`
+
+Meaning: Average marks 79 hain.
+
+4\. MIN() — Sabse chhoti value
 
 ```
-INSERT INTO Employees
-VALUES (1, 'Aman', 'IT');
+SELECT MIN(marks) FROM Students;
 ```
 
-Ab audit table check karo:
+Output: `60`
+
+Meaning: Sabse kam marks 60 hain.
+
+5\. MAX() — Sabse badi value
 
 ```
-SELECT * FROM Employee_Audit;
+SELECT MAX(marks) FROM Students;
 ```
 
-Expected result:
+Output: `92`
 
-| employee_id | action_type | action_time       |
-| ----------- | ----------- | ----------------- |
-| 1           | INSERT      | Current timestamp |
+Meaning: Sabse zyada marks 92 hain.
 
-Dekha? Humne `Employee_Audit` mein manually insert nahi kiya. Trigger ne automatically record add kar diya.
+## 2. Saare functions ek saath
 
-## 4. NEW aur OLD kya hote hain?
-
-- `NEW`: Nayi row ki values ko access karta hai.
-- `OLD`: Purani row ki values ko access karta hai.
-
-| Event  | NEW  | OLD  |
-| ------ | ---- | ---- |
-| INSERT | Haan | Nahi |
-| UPDATE | Haan | Haan |
-| DELETE | Nahi | Haan |
-
-Example:
+Agar ek hi query mein saari calculations chahiye:
 
 ```
--- UPDATE trigger ke andar
-OLD.salary  -- Update se pehle ki salary
-NEW.salary  -- Update ke baad ki salary
+SELECT
+    COUNT(*) AS total_students,
+    SUM(marks) AS total_marks,
+    AVG(marks) AS average_marks,
+    MIN(marks) AS lowest_marks,
+    MAX(marks) AS highest_marks
+FROM Students;
 ```
 
-Is example ke liye `Employees` table mein `salary` column hona chahiye.
+Output:
 
-## 5. Trigger ke real-world uses
+| total_students | total_marks | average_marks | lowest_marks | highest_marks |
+| -------------- | ----------- | ------------- | ------------ | ------------- |
+| 5              | 395         | 79            | 60           | 92            |
 
-- Employee changes ka audit log maintain karna.
-- Product stock changes track karna.
-- Salary ya account-related changes ki history rakhna.
-- Database mein kuch business rules enforce karna.
+`AS` ka use output column ko readable naam dene ke liye hota hai. Isse alias kehte hain.
 
-## 6. Trigger vs Stored Procedure
+## 3. GROUP BY ke saath Aggregate Functions
 
-| Trigger                                       | Stored Procedure                        |
-| --------------------------------------------- | --------------------------------------- |
-| Specific event par automatically run hota hai | Usually explicitly call karna padta hai |
-| INSERT, UPDATE, DELETE se linked ho sakta hai | Reusable SQL operations ka collection   |
-| Event-driven hota hai                         | Application ya user call kar sakta hai  |
+Maan lo har city ke students ke average marks nikalne hain.
 
-## 7. Interview mein kaise answer dena hai?
+```
+SELECT city, AVG(marks) AS average_marks
+FROM Students
+GROUP BY city;
+```
 
-Question: What is a trigger in SQL?
+Output:
 
-Answer:
+| city   | average_marks |
+| ------ | ------------- |
+| Delhi  | 77.5          |
+| Mumbai | 76            |
+| Pune   | 88            |
 
-"A trigger is a database object that automatically executes when a specified event, such as INSERT, UPDATE, or DELETE, occurs on a table. It is commonly used for audit logging, tracking changes, and enforcing certain business rules."
+Yahan `GROUP BY` city-wise groups banata hai aur `AVG()` har group ka average calculate karta hai.
 
-Simple Hinglish mein: Trigger database ka automatic helper hai jo specified event hone par khud execute hota hai.
+## 4. WHERE vs HAVING with Aggregate Functions
+
+Question: Sirf un cities ko dikhao jahan students ke average marks 80 se zyada hain.
+
+```
+SELECT city, AVG(marks) AS average_marks
+FROM Students
+GROUP BY city
+HAVING AVG(marks) > 80;
+```
+
+Output:
+
+| city | average_marks |
+| ---- | ------------- |
+| Pune | 88            |
+
+- `WHERE` individual rows ko filter karta hai, jaise `WHERE marks > 70`.
+- `HAVING` grouped aggregate results ko filter karta hai, jaise `HAVING AVG(marks) > 80`.
+
+## 5. COUNT(\*) vs COUNT(column)
+
+Ye interview mein bahut common question hai.
+
+Maan lo table mein `phone` column hai aur kuch students ke phone numbers NULL hain.
+
+```
+SELECT COUNT(*) FROM Students;
+```
+
+Ye total rows count karega.
+
+```
+SELECT COUNT(phone) FROM Students;
+```
+
+Ye sirf un rows ko count karega jahan `phone` NULL nahi hai.
+
+Yaad rakho: `COUNT(*)` sabhi rows count karta hai, jabki `COUNT(column)` us column ki non-NULL values count karta hai.
+
+Similarly, `SUM()`, `AVG()`, `MIN()` aur `MAX()` generally NULL values ko ignore karte hain. Agar koi non-NULL input value nahi hai, toh ye functions usually NULL return karte hain.
+
+## 6. Practice questions
+
+Q1. Students ke total marks calculate karo.
+
+395
+
+79
+
+92
+
+5
+
+Check answer
+
+Q2. Students ke average marks calculate karo.
+
+395
+
+79
+
+92
+
+60
+
+Check answer
+
+Q3. Total students count karo.
+
+4
+
+395
+
+5
+
+79
+
+Check answer
+
+Q4. Har city ka highest marks find karo.
+
+Hint: Har city ka alag group banana hoga.
+
+Solution samjhao
+
+Interview ke liye one-line answer: Aggregate functions multiple rows par calculation karke ek result deti hain. Important examples hain `COUNT()`, `SUM()`, `AVG()`, `MIN()` aur `MAX()`.
